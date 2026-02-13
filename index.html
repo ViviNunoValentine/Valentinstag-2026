@@ -559,6 +559,8 @@
         border: 10px double var(--pink-accent);
         position: relative;
         transform-style: preserve-3d;
+        z-index: 10;
+        pointer-events: auto;
       }
 
       @keyframes bounce-in {
@@ -752,6 +754,13 @@
         overflow: hidden;
         text-transform: uppercase;
         letter-spacing: 1.5px;
+        /* Mobile touch improvements */
+        -webkit-tap-highlight-color: rgba(255, 173, 210, 0.3);
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: auto;
+        z-index: 10;
       }
 
       .crochet-button::before {
@@ -2217,9 +2226,93 @@
           transform: translateY(100vh) rotate(720deg);
         }
       }
+
+      /* ============================================
+           MUSIC CONTROL BUTTON
+           ============================================ */
+      .music-control {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--pink-accent) 0%, var(--red-soft) 100%);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 
+          0 8px 25px rgba(255, 173, 210, 0.5),
+          inset 0 -2px 5px rgba(0, 0, 0, 0.1),
+          0 0 0 4px rgba(255, 255, 255, 0.3);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        transition: all 0.3s var(--ease-smooth);
+        animation: pulse-music 2s ease-in-out infinite;
+        -webkit-tap-highlight-color: rgba(255, 173, 210, 0.3);
+        touch-action: manipulation;
+        user-select: none;
+      }
+
+      .music-control:hover {
+        transform: scale(1.1);
+        box-shadow: 
+          0 12px 35px rgba(255, 173, 210, 0.7),
+          inset 0 -2px 5px rgba(0, 0, 0, 0.1),
+          0 0 0 4px rgba(255, 255, 255, 0.5);
+      }
+
+      .music-control:active {
+        transform: scale(0.95);
+      }
+
+      .music-control.muted {
+        background: linear-gradient(135deg, #ccc 0%, #999 100%);
+        animation: none;
+      }
+
+      @keyframes pulse-music {
+        0%, 100% {
+          box-shadow: 
+            0 8px 25px rgba(255, 173, 210, 0.5),
+            inset 0 -2px 5px rgba(0, 0, 0, 0.1),
+            0 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+        50% {
+          box-shadow: 
+            0 8px 25px rgba(255, 173, 210, 0.7),
+            inset 0 -2px 5px rgba(0, 0, 0, 0.1),
+            0 0 0 4px rgba(255, 255, 255, 0.5),
+            0 0 30px rgba(255, 173, 210, 0.4);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .music-control {
+          bottom: 20px;
+          right: 20px;
+          width: 55px;
+          height: 55px;
+          font-size: 1.6em;
+        }
+      }
     </style>
   </head>
   <body>
+    <!-- Romantic Background Music -->
+    <audio id="backgroundMusic" loop>
+      <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_4c97958d62.mp3" type="audio/mpeg">
+      <!-- Pixabay: "Romantic" by SergeQuadrado -->
+      Your browser does not support the audio element.
+    </audio>
+
+    <!-- Music Control Button -->
+    <button id="musicControl" class="music-control" title="Musik ein/aus">
+      🎵
+    </button>
+
     <div class="crochet-lace-edge lace-top"></div>
     <div class="crochet-lace-edge lace-bottom"></div>
 
@@ -2696,6 +2789,61 @@
       }
 
       // ============================================
+      // BACKGROUND MUSIC CONTROL
+      // ============================================
+      
+      const backgroundMusic = document.getElementById('backgroundMusic');
+      const musicControl = document.getElementById('musicControl');
+      
+      // Set volume to a comfortable level
+      backgroundMusic.volume = 0.3;
+      
+      // Function to start music
+      function startBackgroundMusic() {
+        backgroundMusic.play().catch(error => {
+          console.log('Music autoplay prevented:', error);
+          // Music will start on first user interaction
+        });
+      }
+      
+      // Try to start music immediately
+      startBackgroundMusic();
+      
+      // Ensure music starts on first user interaction
+      let musicStarted = false;
+      function ensureMusicPlays() {
+        if (!musicStarted) {
+          startBackgroundMusic();
+          musicStarted = true;
+        }
+      }
+      
+      // Add listeners for user interaction
+      document.addEventListener('click', ensureMusicPlays, { once: true });
+      document.addEventListener('touchstart', ensureMusicPlays, { once: true });
+      document.addEventListener('keydown', ensureMusicPlays, { once: true });
+
+      // Music control button toggle
+      let isMusicPlaying = true;
+      musicControl.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent double-triggering ensureMusicPlays
+        
+        if (isMusicPlaying) {
+          backgroundMusic.pause();
+          musicControl.textContent = '🔇';
+          musicControl.classList.add('muted');
+          musicControl.title = 'Musik einschalten';
+          isMusicPlaying = false;
+        } else {
+          backgroundMusic.play();
+          musicControl.textContent = '🎵';
+          musicControl.classList.remove('muted');
+          musicControl.title = 'Musik ausschalten';
+          isMusicPlaying = true;
+        }
+      });
+
+      // ============================================
       // FLOATING BACKGROUND ELEMENTS
       // ============================================
 
@@ -2973,12 +3121,32 @@
       const startBtn = document.getElementById("startExperienceBtn");
       const gameSection = document.getElementById("gameSection");
 
-      startBtn.addEventListener("click", () => {
+      // Function to start the experience
+      function startExperience() {
+        console.log('Starting experience...');
         startScreen.classList.add("hidden");
         setTimeout(() => {
           gameSection.classList.add("active");
         }, 500);
+      }
+
+      // Add both click and touch event listeners for better mobile support
+      startBtn.addEventListener("click", (e) => {
+        console.log('Click event triggered');
+        startExperience();
       });
+      
+      startBtn.addEventListener("touchend", (e) => {
+        console.log('Touch event triggered');
+        e.preventDefault(); // Prevent double-firing on mobile
+        e.stopPropagation();
+        startExperience();
+      }, { passive: false });
+
+      // Fallback: also try touchstart
+      startBtn.addEventListener("touchstart", (e) => {
+        console.log('Touch start detected');
+      }, { passive: true });
 
       // ============================================
       // GAME LOGIC
@@ -3284,9 +3452,19 @@
         () => (gameState.keys["right"] = false),
       );
 
+      // Button event listeners - with mobile touch support
       startGameBtn.addEventListener("click", startGame);
+      startGameBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        startGame();
+      });
 
       playAgainBtn.addEventListener("click", () => {
+        modalOverlay.classList.remove("active");
+        startGame();
+      });
+      playAgainBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
         modalOverlay.classList.remove("active");
         startGame();
       });
@@ -3297,8 +3475,21 @@
         loveLetter.classList.add("active");
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
+      rewardBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        modalOverlay.classList.remove("active");
+        gameSection.classList.remove("active");
+        loveLetter.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
 
       backToGameBtn.addEventListener("click", () => {
+        loveLetter.classList.remove("active");
+        gameSection.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      backToGameBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
         loveLetter.classList.remove("active");
         gameSection.classList.add("active");
         window.scrollTo({ top: 0, behavior: "smooth" });
